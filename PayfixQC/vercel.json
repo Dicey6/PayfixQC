@@ -1,7 +1,7 @@
 {
   "outputDirectory": "quizcup",
   "buildCommand": "",
-  "installCommand": "cd quizcup && npm install",
+  "installCommand": "",
   "framework": null,
   "rewrites": [
     { "source": "/admin",  "destination": "/admin.html"  },
