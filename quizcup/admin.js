@@ -362,9 +362,11 @@ async function sendViaJupiter() {
   if (!_currentPayData) return;
   const { id, wallet, rewardSol } = _currentPayData;
 
-  const provider = window.solana;
+  const provider = window.solana || window.jupiter?.solana || window.phantom?.solana;
   if (!provider) {
-    alertDiv.innerHTML = '<div class="alert alert-error">Jupiter wallet not found — make sure you are opening this page inside the Jupiter mobile app browser.</div>';
+    const found = Object.keys(window).filter(k => ['solana','jupiter','phantom','wallet','coin98','slope','backpack'].includes(k));
+    const hint = found.length ? ` (detected on window: ${found.join(', ')})` : ' (no wallet detected on window)';
+    alertDiv.innerHTML = `<div class="alert alert-error">Wallet not found — open this page inside the Jupiter mobile app browser.${hint}</div>`;
     return;
   }
   if (!rewardSol || rewardSol <= 0) {
