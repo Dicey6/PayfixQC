@@ -221,7 +221,7 @@ async function loadSubmissions() {
         const rewardSolVal  = parseFloat(row.quizzes?.reward_sol) || 0;
         actions = `
           <div class="admin-action-btns">
-            <button class="btn btn-gold btn-sm" onclick="openPayModal(${row.id}, '${walletSafe}', '${usernameSafe}', '${rewardDisplay}', ${rewardSolVal})">💸 Pay via Jupiter</button>
+            <button class="btn btn-gold btn-sm" onclick="openPayModal(${row.id}, '${walletSafe}', '${usernameSafe}', '${rewardDisplay}', ${rewardSolVal})">🔮 Pay via Phantom</button>
             <button class="btn btn-danger btn-sm"  onclick="updateStatus(${row.id},'rejected')">✕ Reject</button>
           </div>`;
       } else if (row.status === 'processing') {
@@ -232,7 +232,7 @@ async function loadSubmissions() {
         actions = `
           <div class="admin-action-btns">
             <span style="color:var(--purple);font-size:0.82rem;display:block;margin-bottom:6px">⚠️ Stuck in processing</span>
-            <button class="btn btn-gold btn-sm" onclick="openPayModal(${row.id}, '${walletSafe}', '${usernameSafe}', '${rewardDisplay}', ${rewardSolVal})">💸 Pay via Jupiter</button>
+            <button class="btn btn-gold btn-sm" onclick="openPayModal(${row.id}, '${walletSafe}', '${usernameSafe}', '${rewardDisplay}', ${rewardSolVal})">🔮 Pay via Phantom</button>
             <button class="btn btn-outline btn-sm" onclick="updateStatus(${row.id},'approved')">↺ Reset to Approved</button>
           </div>`;
       } else if (row.status === 'paid') {
@@ -305,7 +305,7 @@ async function updateStatus(id, newStatus) {
 }
 
 /* ============================================================
-   PAY MODAL — Jupiter Mobile payment flow
+   PAY MODAL — Phantom-automated payment flow
 ============================================================ */
 
 let _currentPayData = null;
@@ -324,7 +324,7 @@ function openPayModal(id, wallet, username, rewardDisplay, rewardSol) {
 
   const btn = document.getElementById('phantomPayBtn');
   btn.disabled    = false;
-  btn.textContent = '💸 Pay via Jupiter';
+  btn.textContent = '🔮 Pay via Phantom';
 
   document.getElementById('modalCloseBtn').disabled = false;
   document.getElementById('payModal').style.display = 'flex';
@@ -354,32 +354,19 @@ async function _markPaid(id, txHash) {
   if (error) throw error;
 }
 
-/* ---- Primary flow: Jupiter Mobile wallet ---- */
-/* Poll for Jupiter wallet provider — injects asynchronously on page load */
-function _getProvider(timeoutMs = 3000) {
-  const direct = window.solana
-    || window.jupiter
-    || window.jupiterWallet
-    || window.phantom?.solana;
-  if (direct) return Promise.resolve(direct);
-
-  return new Promise((resolve) => {
-    const start = Date.now();
-    const id = setInterval(() => {
-      const p = window.solana || window.jupiter || window.jupiterWallet || window.phantom?.solana;
-      if (p) { clearInterval(id); resolve(p); return; }
-      if (Date.now() - start >= timeoutMs) { clearInterval(id); resolve(null); }
-    }, 100);
-  });
-}
-
-async function sendViaJupiter() {
+/* ---- Primary flow: Phantom extension ---- */
+async function sendViaPhantom() {
   const alertDiv = document.getElementById('modalAlert');
   alertDiv.innerHTML = '';
 
   if (!_currentPayData) return;
   const { id, wallet, rewardSol } = _currentPayData;
 
+  const provider = window.phantom?.solana;
+  if (!provider?.isPhantom) {
+    alertDiv.innerHTML = '<div class="alert alert-error">Phantom wallet not found — install the <a href="https://phantom.app" target="_blank" style="color:inherit;text-decoration:underline">Phantom extension</a> or use the manual TX option below.</div>';
+    return;
+  }
   if (!rewardSol || rewardSol <= 0) {
     alertDiv.innerHTML = '<div class="alert alert-error">No SOL amount set on this quiz. Edit the quiz and fill in the SOL Amount field.</div>';
     return;
@@ -388,17 +375,6 @@ async function sendViaJupiter() {
   const btn = document.getElementById('phantomPayBtn');
   btn.disabled = true;
   document.getElementById('modalCloseBtn').disabled = true;
-  setModalStatus('🔍 Looking for Jupiter wallet…');
-
-  const provider = await _getProvider(3000);
-  if (!provider) {
-    setModalStatus('');
-    alertDiv.innerHTML = '<div class="alert alert-error">Jupiter wallet not found after 3s. Make sure you opened this page inside the Jupiter app browser, not an external browser.</div>';
-    btn.disabled = false;
-    document.getElementById('modalCloseBtn').disabled = false;
-    btn.textContent = '💸 Pay via Jupiter';
-    return;
-  }
 
   let step = 'init';
   let txSignature = null;
@@ -406,7 +382,7 @@ async function sendViaJupiter() {
   try {
     /* 1. Connect */
     step = 'connect';
-    setModalStatus('🔌 Connecting to Jupiter…');
+    setModalStatus('🔌 Connecting to Phantom…');
     await provider.connect();
 
     /* 2. RPC connection */
@@ -431,7 +407,7 @@ async function sendViaJupiter() {
     setModalStatus('🔗 Fetching blockhash…');
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
 
-    /* 5. Build VersionedTransaction (modern format — works on Jupiter mobile) */
+    /* 5. Build VersionedTransaction (modern format — works on Phantom mobile) */
     step = 'build';
     const transferIx = solanaWeb3.SystemProgram.transfer({
       fromPubkey: provider.publicKey,
@@ -445,9 +421,9 @@ async function sendViaJupiter() {
     }).compileToV0Message();
     const transaction = new solanaWeb3.VersionedTransaction(message);
 
-    /* 6. Jupiter approval + broadcast (signAndSendTransaction handles both) */
-    step = 'jupiter';
-    setModalStatus('👆 Approve the transaction in Jupiter…');
+    /* 6. Phantom approval + broadcast (signAndSendTransaction handles both) */
+    step = 'phantom';
+    setModalStatus('👆 Approve the transaction in Phantom…');
     const result = await provider.signAndSendTransaction(transaction);
     txSignature = result.signature;
 
@@ -486,7 +462,7 @@ async function sendViaJupiter() {
       const allProps = {};
       const keys = Object.getOwnPropertyNames(err || {});
       keys.forEach(k => { try { allProps[k] = err[k]; } catch(_){} });
-      /* Also capture non-own properties common on wallet errors */
+      /* Also capture non-own properties common on Phantom errors */
       ['message','name','code','stack','type','error','data','details','cause'].forEach(k => {
         if (err?.[k] !== undefined) allProps[k] = err[k];
       });
@@ -522,7 +498,7 @@ async function sendViaJupiter() {
 
     btn.disabled = false;
     document.getElementById('modalCloseBtn').disabled = false;
-    btn.textContent = '💸 Pay via Jupiter';
+    btn.textContent = '🔮 Pay via Phantom';
   }
 }
 
