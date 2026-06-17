@@ -1,0 +1,9 @@
+{
+  "outputDirectory": ".",
+  "framework": null,
+  "installCommand": "npm install",
+  "rewrites": [
+    { "source": "/admin",  "destination": "/admin.html"  },
+    { "source": "/status", "destination": "/status.html" }
+  ]
+}
