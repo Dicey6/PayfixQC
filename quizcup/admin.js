@@ -355,6 +355,24 @@ async function _markPaid(id, txHash) {
 }
 
 /* ---- Primary flow: Jupiter Mobile wallet ---- */
+/* Poll for Jupiter wallet provider — injects asynchronously on page load */
+function _getProvider(timeoutMs = 3000) {
+  const direct = window.solana
+    || window.jupiter
+    || window.jupiterWallet
+    || window.phantom?.solana;
+  if (direct) return Promise.resolve(direct);
+
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const id = setInterval(() => {
+      const p = window.solana || window.jupiter || window.jupiterWallet || window.phantom?.solana;
+      if (p) { clearInterval(id); resolve(p); return; }
+      if (Date.now() - start >= timeoutMs) { clearInterval(id); resolve(null); }
+    }, 100);
+  });
+}
+
 async function sendViaJupiter() {
   const alertDiv = document.getElementById('modalAlert');
   alertDiv.innerHTML = '';
@@ -362,13 +380,6 @@ async function sendViaJupiter() {
   if (!_currentPayData) return;
   const { id, wallet, rewardSol } = _currentPayData;
 
-  const provider = window.solana || window.jupiter?.solana || window.phantom?.solana;
-  if (!provider) {
-    const found = Object.keys(window).filter(k => ['solana','jupiter','phantom','wallet','coin98','slope','backpack'].includes(k));
-    const hint = found.length ? ` (detected on window: ${found.join(', ')})` : ' (no wallet detected on window)';
-    alertDiv.innerHTML = `<div class="alert alert-error">Wallet not found — open this page inside the Jupiter mobile app browser.${hint}</div>`;
-    return;
-  }
   if (!rewardSol || rewardSol <= 0) {
     alertDiv.innerHTML = '<div class="alert alert-error">No SOL amount set on this quiz. Edit the quiz and fill in the SOL Amount field.</div>';
     return;
@@ -377,6 +388,17 @@ async function sendViaJupiter() {
   const btn = document.getElementById('phantomPayBtn');
   btn.disabled = true;
   document.getElementById('modalCloseBtn').disabled = true;
+  setModalStatus('🔍 Looking for Jupiter wallet…');
+
+  const provider = await _getProvider(3000);
+  if (!provider) {
+    setModalStatus('');
+    alertDiv.innerHTML = '<div class="alert alert-error">Jupiter wallet not found after 3s. Make sure you opened this page inside the Jupiter app browser, not an external browser.</div>';
+    btn.disabled = false;
+    document.getElementById('modalCloseBtn').disabled = false;
+    btn.textContent = '💸 Pay via Jupiter';
+    return;
+  }
 
   let step = 'init';
   let txSignature = null;
