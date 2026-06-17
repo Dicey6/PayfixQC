@@ -146,14 +146,14 @@
       <div id="modalAlert" style="margin-bottom:12px"></div>
 
       <!-- Primary action -->
-      <button class="btn btn-gold w-full" id="phantomPayBtn" onclick="sendViaPhantom()" style="font-size:1rem;padding:14px;margin-bottom:12px">
-        🔮 Pay via Phantom
+      <button class="btn btn-gold w-full" id="phantomPayBtn" onclick="sendViaJupiter()" style="font-size:1rem;padding:14px;margin-bottom:12px">
+        💸 Pay via Jupiter
       </button>
 
       <!-- Fallback toggle -->
       <div style="text-align:center;margin-bottom:4px">
         <button onclick="toggleManualFallback()" style="background:none;border:none;color:var(--text-muted);font-size:0.78rem;cursor:pointer;text-decoration:underline;text-underline-offset:3px">
-          Phantom not available? Enter TX manually
+          Wallet not available? Enter TX manually
         </button>
       </div>
 
@@ -268,13 +268,13 @@
             💸 PAYMENT WORKFLOW
           </h3>
           <p style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:10px">
-            Payments are sent manually via <strong style="color:var(--text)">Phantom</strong>. No private key is stored on any server.
+            Payments are sent via <strong style="color:var(--text)">Jupiter Mobile</strong>. No private key is stored on any server.
           </p>
           <ol style="font-size:0.82rem;color:var(--text-muted);margin:0 0 0 16px;line-height:2">
             <li>Approve a submission in the <strong style="color:var(--text)">Submissions</strong> tab</li>
-            <li>Click <strong style="color:var(--gold)">💸 Pay via Phantom</strong> — the modal shows the wallet &amp; amount</li>
-            <li>Copy the wallet, open Phantom, and send the SOL</li>
-            <li>Paste the TX signature into the modal and click <strong style="color:var(--text)">Confirm</strong></li>
+            <li>Click <strong style="color:var(--gold)">💸 Pay via Jupiter</strong> — the modal shows the wallet &amp; amount</li>
+            <li>Approve the transaction in the Jupiter mobile app</li>
+            <li>Payment is recorded automatically once confirmed on-chain</li>
           </ol>
           <p style="font-size:0.82rem;color:var(--text-muted);margin-top:12px">
             If any submissions show <em>stuck in processing</em> (from the old auto-pay system), click <strong style="color:var(--text)">↺ Reset to Approved</strong> and then use the modal to pay them.
